@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Iniciar Sesión</h1>
+<form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Contraseña" required>
+    <button type="submit">Ingresar</button>
+</form>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+        })
+    });
+    const data = await response.json();
+    if (response.ok) {
+        localStorage.setItem('token', data.access_token);
+        window.location.href = '/dashboard';
+    } else {
+        alert('Error: ' + data.detail);
+    }
+});
+</script>
+{% endblock %}
