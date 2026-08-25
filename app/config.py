@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Base de datos
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres123@localhost:5432/urlshortener"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./url_shortener.db"
     
     # Entorno
     ENVIRONMENT: str = "development"
