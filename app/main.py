@@ -12,23 +12,53 @@ from app.schemas import UserCreate, UserLogin, URLCreate, URLResponse, Token
 from app.models import User
 from datetime import timedelta
 import asyncio
-import os
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI(title="URL Shortener")
 
 # ====== CONFIGURACIÓN DE TEMPLATES ======
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # ====== PÁGINAS HTML (¡PRIMERO! ANTES DE /{short_code}) ======
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head><title>URL Shortener</title></head>
+    <body>
+        <h1>Bienvenido al Acortador de URLs</h1>
+        <p>La aplicación está funcionando correctamente.</p>
+        <ul>
+            <li><a href="/register">Registro</a></li>
+            <li><a href="/login">Login</a></li>
+            <li><a href="/docs">Documentación API</a></li>
+        </ul>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
-@app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    print("📄 Página de registro cargada")
-    return templates.TemplateResponse("register.html", {"request": request})
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Login - URL Shortener</title></head>
+    <body>
+        <h1>Inicio de Sesión</h1>
+        <p>Esta es la página de login (pendiente de implementación).</p>
+        <a href="/">Volver al inicio</a>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
