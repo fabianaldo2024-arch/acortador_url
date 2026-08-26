@@ -11,19 +11,23 @@ from app.database import get_db
 from app.models import User
 from app.schemas import TokenData
 
-# ====== CONFIGURACIÓN ======
+# ====== CONFIGURACIÓN DE HASH ======
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ====== FUNCIONES DE CONTRASEÑA CON TRUNCAMIENTO (bcrypt <= 72 bytes) ======
+def get_password_hash(password: str) -> str:
+    """Hashea la contraseña truncándola a 72 bytes para cumplir con bcrypt."""
+    return pwd_context.hash(password[:72])
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica la contraseña truncándola también a 72 bytes."""
+    return pwd_context.verify(plain_password[:72], hashed_password)
+
+# ====== CONFIGURACIÓN DE TOKEN ======
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login", auto_error=False)
 
-# ====== FUNCIONES DE CONTRASEÑA ======
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-# ====== FUNCIONES DE TOKEN ======
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Crea un token JWT con expiración."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -35,11 +39,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # ====== FUNCIONES DE USUARIO ======
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
-    """Obtiene un usuario por su email usando SELECT"""
+    """Obtiene un usuario por su email."""
     result = await db.execute(select(User).where(User.email == email))
     return result.scalar_one_or_none()
 
 async def authenticate_user(db: AsyncSession, email: str, password: str):
+    """Autentica al usuario verificando email y contraseña."""
     user = await get_user_by_email(db, email)
     if not user:
         return False
@@ -47,20 +52,26 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
         return False
     return user
 
-# ====== DEPENDENCIAS ======
+# ====== DEPENDENCIA PARA OBTENER USUARIO ACTUAL (desde header o cookie) ======
 async def get_current_user(
     request: Request,
     token: Optional[str] = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> User:
+    """
+    Obtiene el usuario actual a partir del token JWT.
+    Primero intenta desde el header Authorization, si no, desde la cookie 'access_token'.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # Si no hay token en el header, intentar desde la cookie
     if not token:
         token = request.cookies.get("access_token")
+    
     if not token:
         raise credentials_exception
 
