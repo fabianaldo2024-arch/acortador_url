@@ -1,63 +1,56 @@
-# Entornos virtuales
-venv/
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+.Python
 env/
-.env
-.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# Archivos de base de datos
+# Base de datos SQLite
 *.db
 *.sqlite3
 *.sqlite
 
-# Archivos de caché de Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.so
-*.dylib
-
-# Archivos de entorno y sensibles
+# Archivos de entorno y secretos
 .env
 .env.local
 .env.*.local
+*.key
+*.pem
 
-# Archivos de log
+# Archivos de logs
 *.log
 logs/
 
-# Archivos temporales
-*.tmp
-*.temp
+# Archivos de backup
 *.backup
 *.bak
+*~
+
+# Archivos de cookies (si los generas)
 cookies.txt
 
-# Archivos generados por herramientas
-.DS_Store
-Thumbs.db
-
-# Directorios de IDE
+# Directorios de editor
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Archivos de cobertura de pruebas
-htmlcov/
+# Archivos de cobertura y testing
 .coverage
-.tox
+htmlcov/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Archivos de empaquetado
+# Archivos de distribución
 dist/
 build/
 *.egg-info/
-*.whl
 
-# Archivos de migraciones (si usas SQLAlchemy/Alembic, pero no subas las migraciones generadas automáticamente)
-# migrations/  # solo si generas migraciones automáticas, pero mejor mantenerlas
-
-# Archivos de configuración local
-config.local.py
-settings.local.py
+# Archivos de configuración de usuario (opcional)
+*.local
