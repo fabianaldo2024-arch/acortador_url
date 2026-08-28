@@ -8,15 +8,17 @@ from datetime import timedelta
 import os
 import asyncio
 
-from app.database import engine, Base, get_db
+from app.core.database import engine, Base, get_db
 from app import models
 from app.services.url_service import URLService
 from app.services.metadata_service import MetadataService
-from app.auth import (
+
+# Importaciones corregidas
+from app.api.endpoints.auth import (
     get_current_user, authenticate_user, create_access_token,
     get_password_hash, get_user_by_email
 )
-from app.dependencies import get_current_admin_user, get_current_active_user
+from app.core.dependencies import get_current_admin_user, get_current_active_user
 from app.schemas import UserCreate, UserLogin, URLCreate, URLResponse, Token
 
 # ====== LIFESPAN PARA CREAR TABLAS AL INICIAR ======

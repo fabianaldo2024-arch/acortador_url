@@ -1,56 +1,45 @@
-# Python
-__pycache__/
-*.py[cod]
-*.so
-*.pyd
-.Python
-env/
+# Entorno virtual
 venv/
-ENV/
-env.bak/
-venv.bak/
+env/
+.venv/
 
-# Base de datos SQLite
+# Bases de datos
 *.db
-*.sqlite3
 *.sqlite
+*.sqlite3
 
-# Archivos de entorno y secretos
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Variables de entorno
 .env
 .env.local
 .env.*.local
-*.key
-*.pem
 
-# Archivos de logs
+# Logs
 *.log
-logs/
 
-# Archivos de backup
+# Archivos de respaldo
 *.backup
 *.bak
-*~
 
-# Archivos de cookies (si los generas)
-cookies.txt
-
-# Directorios de editor
+# Archivos de editor
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Archivos de cobertura y testing
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Cobertura de pruebas
 .coverage
 htmlcov/
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
 
-# Archivos de distribución
-dist/
-build/
-*.egg-info/
-
-# Archivos de configuración de usuario (opcional)
-*.local
+# Docker (si generas imágenes)
+*.tar

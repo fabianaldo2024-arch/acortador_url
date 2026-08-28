@@ -1,33 +1,53 @@
-# URL Shortener - Acortador de URLs
+# 🚀 URL Shortener - Acortador de Enlaces
 
-## Descripción
-Aplicación web para acortar URLs, construida con **FastAPI**, **SQLAlchemy** (asíncrono) y **SQLite** (por defecto). Incluye autenticación de usuarios, dashboard personal y panel de administración.
+Aplicación web profesional para acortar URLs, desarrollada con **FastAPI**, **SQLAlchemy** y **SQLite/PostgreSQL**. Incluye autenticación de usuarios, panel de administración, caché con Redis, limitación de peticiones, contenerización con Docker y migraciones con Alembic.
 
-## Características
-- Registro e inicio de sesión de usuarios.
-- Acortamiento de URLs con código único.
-- Redirección automática a la URL original.
-- Estadísticas de clics (opcional, según implementación).
-- Panel de administración para gestión de URLs y usuarios (opcional).
-- Documentación interactiva de la API en `/docs`.
+---
 
-## Tecnologías utilizadas
-- **FastAPI** - Framework web asíncrono.
-- **SQLAlchemy** - ORM asíncrono.
-- **SQLite** (por defecto) / PostgreSQL (opcional con variables de entorno).
-- **Jinja2** - Motor de plantillas (para dashboards).
-- **Passlib / bcrypt** - Hash de contraseñas.
-- **Uvicorn** - Servidor ASGI.
+## ✨ Características
 
-## Requisitos previos
-- Python 3.10 o superior.
-- `pip` y `venv` (entornos virtuales).
-- (Opcional) PostgreSQL si se desea en producción.
+- **Acortamiento de URLs** con código corto único.
+- **Autenticación JWT** (registro, login, tokens).
+- **Dashboard de usuario** para ver y gestionar sus enlaces.
+- **Panel de administración** para supervisar todas las URLs.
+- **Caché con Redis** para redirecciones rápidas.
+- **Rate Limiting** (límite de peticiones) para evitar abusos.
+- **Migraciones automáticas** con Alembic.
+- **Pruebas automatizadas** con pytest.
+- **Contenerización** con Docker y Docker Compose.
+- **Documentación interactiva** (Swagger UI) en `/docs`.
 
-## Instalación y ejecución
+---
 
-1. Clonar el repositorio:
-   ```bash
-   git clone https://github.com/tu-usuario/acortador_url.git
-   cd acortador_url
-'EOF'
+## 🛠️ Tecnologías utilizadas
+
+- **Python 3.12+**
+- **FastAPI** (framework web)
+- **SQLAlchemy** (ORM asíncrono)
+- **Alembic** (migraciones)
+- **SQLite** (desarrollo) / **PostgreSQL** (producción)
+- **Redis** (caché)
+- **JWT** (autenticación)
+- **SlowAPI** (rate limiting)
+- **Pytest** (pruebas)
+- **Docker** y **Docker Compose**
+- **Jinja2** (templates HTML)
+- **Bcrypt** (hash de contraseñas)
+
+---
+
+## 📋 Requisitos previos
+
+- Python 3.12 o superior.
+- pip y virtualenv (o venv).
+- Docker y Docker Compose (opcional, para despliegue).
+- Redis (opcional, para caché).
+
+---
+
+## 🔧 Instalación y configuración
+
+### 1. Clonar el repositorio
+```bash
+git clone <url-del-repositorio>
+cd acortador_url
