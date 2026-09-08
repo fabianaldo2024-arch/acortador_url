@@ -1,18 +1,29 @@
-# Entorno virtual
+# Entornos virtuales
 venv/
 env/
+ENV/
+env.bak/
+venv.bak/
+.env/
 .venv/
 
-# Bases de datos
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Base de datos (SQLite)
 *.db
 *.sqlite
 *.sqlite3
-
-# Cache de Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.db-journal
+url_shortener.db
 
 # Variables de entorno
 .env
@@ -21,25 +32,40 @@ __pycache__/
 
 # Logs
 *.log
+*.log.*
+logs/
 
-# Archivos de respaldo
-*.backup
-*.bak
-
-# Archivos de editor
+# Editores y IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Archivos de sistema
+*~
 .DS_Store
 Thumbs.db
 
-# Cobertura de pruebas
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Docker (si generas imágenes)
+# Docker (opcional)
 *.tar
+*.tar.gz
+
+# Archivos temporales
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# Archivos de migraciones (si usas Alembic)
+migrations/__pycache__/
+migrations/*.pyc
+
+# Reports y coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+
+
+

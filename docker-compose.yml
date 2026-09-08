@@ -1,0 +1,8 @@
+services:
+  app:
+    build: .
+    container_name: url_shortener_app
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
