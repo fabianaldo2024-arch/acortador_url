@@ -1,64 +1,85 @@
 """
-Application Entrypoint with FastAPI + NiceGUI.
-Punto de Entrada Principal integrando FastAPI y NiceGUI.
+FastAPI Main Application Entrypoint.
+Punto de entrada principal de la aplicación FastAPI.
 """
-import logging
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, status, Depends, HTTPException
-from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from nicegui import ui
 
-from app.core.config import settings
-from app.core.database import engine, Base, get_db
-from app.api.endpoints import router
+import logging
+import random
+import string
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+from fastapi import FastAPI, Depends, HTTPException, status
+from pydantic import BaseModel, HttpUrl
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from app.core.database import init_db, get_db
 from app.models.models import URL
-from app.ui.pages import init_ui
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger("acortador")
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan manager / Gestor del ciclo de vida de la aplicación."""
     logger.info("Initializing database tables...")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database initialization completed.")
+    await init_db()
     yield
+    logger.info("Shutting down application...")
 
+app = FastAPI(
+    title="Acortador de URLs API",
+    version="0.2.0",
+    lifespan=lifespan
+)
 
-app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
+class URLCreateSchema(BaseModel):
+    target_url: HttpUrl
 
-# Endpoint de Salud
-@app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
-async def health_check():
-    return {"status": "healthy", "database": "connected"}
+class URLResponseSchema(BaseModel):
+    short_code: str
+    target_url: str
 
-# Incluir Endpoints REST
-app.include_router(router, prefix="/api")
+@app.get("/health")
+async def health_check(db: AsyncSession = Depends(get_db)) -> dict[str, str]:
+    """Healthcheck endpoint / Endpoint de sanidad."""
+    try:
+        await db.execute(select(1))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as err:
+        logger.error(f"Healthcheck failed: {err}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database unavailable"
+        )
 
-# Redirección Dinámica de URLs Acortadas
-@app.get("/{short_code}", tags=["Redirection"])
-async def redirect_to_original(short_code: str, db: AsyncSession = Depends(get_db)):
+@app.post("/api/v1/shorten", response_model=URLResponseSchema, status_code=status.HTTP_201_CREATED)
+async def create_short_url(
+    payload: URLCreateSchema,
+    db: AsyncSession = Depends(get_db)
+) -> dict[str, str]:
+    """Shorten target URL / Acorta una URL de destino."""
+    chars = string.ascii_letters + string.digits
+    short_code = "".join(random.choice(chars) for _ in range(6))
+    
+    target_url_str = str(payload.target_url)
+    new_url = URL(target_url=target_url_str, short_code=short_code)
+    
+    db.add(new_url)
+    await db.commit()
+    await db.refresh(new_url)
+    
+    return {"short_code": new_url.short_code, "target_url": new_url.target_url}
+
+@app.get("/{short_code}")
+async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)) -> dict[str, str]:
+    """Retrieve target URL from short code / Obtiene URL de destino por código."""
     stmt = select(URL).where(URL.short_code == short_code)
     result = await db.execute(stmt)
-    url_entry = result.scalar_one_or_none()
-
-    if not url_entry:
-        raise HTTPException(status_code=404, detail="URL acortada no encontrada")
-
-    url_entry.clicks += 1
-    await db.commit()
-    return RedirectResponse(url=url_entry.original_url)
-
-# Inicializar Vistas de NiceGUI en Python
-init_ui()
-
-# Montar NiceGUI sobre FastAPI
-ui.run_with(
-    app,
-    storage_secret=settings.SECRET_KEY,
-    mount_path="/"
-)
+    url_item = result.scalar_one_or_none()
+    
+    if not url_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
+    
+    return {"target_url": url_item.target_url}
