@@ -1,8 +1,35 @@
 services:
-  app:
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: url_shortener_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
     build: .
     container_name: url_shortener_app
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     environment:
-      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql+asyncpg://postgres:secretpassword@db:5432/url_shortener_db
+      - SECRET_KEY=super-secret-key-nicegui-python-3.12
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

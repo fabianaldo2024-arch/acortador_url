@@ -1,70 +1,35 @@
-# Entornos virtuales
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-.env/
-.venv/
 
-# Python
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-*.egg-info/
-dist/
-build/
-*.egg
 
-# Base de datos (SQLite)
-*.db
-*.sqlite
-*.sqlite3
-*.db-journal
-url_shortener.db
-
-# Variables de entorno
+# Secrets & Environment Variables (CRÍTICO)
 .env
 .env.local
-.env.*.local
+*.pem
+*.key
 
-# Logs
-*.log
-*.log.*
-logs/
+# Tests & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Editores y IDEs
+# Docker & Database Persistence
+postgres_data/
+*.db
+*.sqlite3
+
+# IDEs & System Files
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
 .DS_Store
-Thumbs.db
-
-# Docker (opcional)
-*.tar
-*.tar.gz
-
-# Archivos temporales
-*.tmp
-*.temp
-*.cache
-.cache/
-
-# Archivos de migraciones (si usas Alembic)
-migrations/__pycache__/
-migrations/*.pyc
-
-# Reports y coverage
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-*.cover
-.hypothesis/
+*.swp
 
 
 

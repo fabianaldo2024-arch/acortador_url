@@ -1,18 +1,39 @@
-FROM python:3.12-slim
+# Etapa 1: Builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Instalar dependencias
-RUN pip install --no-cache-dir fastapi uvicorn
+# Variables de entorno para asegurar que Poetry no cree entornos virtuales y evite interactividad
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_CACHE_DIR='/var/cache/pypoetry'
 
-# Copiar TODO el código (incluyendo app/)
-COPY . /app/
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# Configurar PYTHONPATH
-ENV PYTHONPATH=/app
+RUN pip install --no-cache-dir poetry==1.8.2
 
-# Verificar que los archivos existen
-RUN ls -la /app/ && ls -la /app/app/
+COPY pyproject.toml ./
 
-# Ejecutar la aplicación
-CMD ["uvicorn", "app.run:app", "--host", "0.0.0.0", "--port", "8000"]
+# Instalación directa de dependencias principales desde pyproject.toml
+RUN poetry install --no-root --only main
+
+# Etapa 2: Runner
+FROM python:3.12-slim AS runner
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copiar bibliotecas de Python instaladas desde la etapa builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
