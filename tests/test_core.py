@@ -1,19 +1,28 @@
 """
-Unit tests for Core modules and Security logic.
-Pruebas unitarias para módulos Core y lógica de seguridad.
+Unit tests for core functionality and security.
+Pruebas unitarias para la funcionalidad principal y seguridad.
 """
 
 import pytest
-from app.core.security import get_password_hash, verify_password
+from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 
-def test_password_hashing_and_verification() -> None:
-    """
-    Verify that password hashing and verification function correctly.
-    Verifica que el hashing y verificación de contraseñas funcionen correctamente.
-    """
-    plain_password = "SecretPassword123!"
-    hashed = get_password_hash(plain_password)
+def test_password_hashing() -> None:
+    """Verify password hashing and verification / Verifica el hasheo de contraseñas."""
+    password = "secret_password_123"
+    hashed = hash_password(password)
     
-    assert hashed != plain_password
-    assert verify_password(plain_password, hashed) is True
-    assert verify_password("WrongPassword", hashed) is False
+    assert hashed != password
+    assert verify_password(password, hashed) is True
+    assert verify_password("wrong_password", hashed) is False
+
+def test_jwt_token_generation_and_decoding() -> None:
+    """Verify JWT token encoding and decoding / Verifica generación y decodificación de JWT."""
+    payload = {"sub": 1, "email": "user@example.com"}
+    token = create_access_token(payload)
+    
+    assert isinstance(token, str)
+    
+    decoded = decode_access_token(token)
+    assert decoded is not None
+    assert decoded["sub"] == "1"
+    assert decoded["email"] == "user@example.com"

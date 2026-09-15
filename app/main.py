@@ -1,21 +1,23 @@
 """
-FastAPI Main Application Entrypoint.
-Punto de entrada principal de la aplicación FastAPI.
+FastAPI Main Application Entrypoint with API Endpoints & NiceGUI.
+Punto de entrada principal con Endpoints API e integración NiceGUI.
 """
 
 import logging
 import random
 import string
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status
+from nicegui import ui
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import init_db, get_db
 from app.models.models import URL
+from app.ui.pages import init_ui
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("acortador")
@@ -30,7 +32,7 @@ async def lifespan(app_instance: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title="Acortador de URLs API",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan
 )
 
@@ -83,3 +85,7 @@ async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)) -> d
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
     
     return {"target_url": url_item.target_url}
+
+# Inicializar interfaz gráfica con NiceGUI
+init_ui()
+ui.run_with(app, storage_secret="NICEGUI_SESSION_SECRET_KEY_12345")
