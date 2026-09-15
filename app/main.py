@@ -7,9 +7,10 @@ import logging
 import random
 import string
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from nicegui import ui
 from pydantic import BaseModel, HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -74,9 +75,9 @@ async def create_short_url(
     
     return {"short_code": new_url.short_code, "target_url": new_url.target_url}
 
-@app.get("/{short_code}")
-async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)) -> dict[str, str]:
-    """Retrieve target URL from short code / Obtiene URL de destino por código."""
+@app.get("/r/{short_code}")
+async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)):
+    """Retrieve target URL from short code and redirect / Redirige hacia la URL original."""
     stmt = select(URL).where(URL.short_code == short_code)
     result = await db.execute(stmt)
     url_item = result.scalar_one_or_none()
@@ -84,8 +85,8 @@ async def redirect_url(short_code: str, db: AsyncSession = Depends(get_db)) -> d
     if not url_item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
     
-    return {"target_url": url_item.target_url}
+    return RedirectResponse(url=url_item.target_url, status_code=307)
 
-# Inicializar interfaz gráfica con NiceGUI
+# Inicializar páginas UI de NiceGUI e integrarlo con la instancia FastAPI
 init_ui()
 ui.run_with(app, storage_secret="NICEGUI_SESSION_SECRET_KEY_12345")

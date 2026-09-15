@@ -1,153 +1,169 @@
 """
-NiceGUI Pure Python UI Module.
-Módulo de Interfaz Gráfica 100% Python con NiceGUI.
+NiceGUI Web UI Components & Pages.
+Componentes y Páginas de Interfaz Web NiceGUI.
 """
-import string
-import random
+
 from typing import Optional
 from nicegui import ui, app
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
-from app.core.security import get_password_hash, verify_password
+from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.models.models import User, URL
 
-
-def generate_short_code(length: int = 6) -> str:
-    """Generate random short code / Generar código corto aleatorio."""
-    chars = string.ascii_letters + string.digits
-    return ''.join(random.choice(chars) for _ in range(length))
-
+def get_current_user_id() -> Optional[int]:
+    """Retrieves current user ID from browser session cookie."""
+    token = app.storage.user.get("access_token")
+    if not token:
+        return None
+    payload = decode_access_token(token)
+    return payload.get("sub") if payload else None
 
 def init_ui():
-    """Initialize UI Pages and State / Inicializar Páginas y Estado de UI."""
+    """Initializes NiceGUI Pages / Inicializa las páginas de NiceGUI."""
 
-    @ui.page('/')
-    async def index_page():
-        # Estado de sesión guardado en la memoria de la app cliente
-        session = app.storage.user
-        if 'authenticated' not in session:
-            session['authenticated'] = False
-            session['user_id'] = None
-            session['email'] = ""
+    @ui.page("/")
+    async def dashboard_page():
+        ui.colors(primary="#2563eb")
+        user_id = get_current_user_id()
+        
+        # Header / Navegación Superior
+        with ui.header().classes("justify-between items-center bg-blue-600 text-white p-4 shadow-md"):
+            with ui.row().classes("items-center gap-2"):
+                ui.icon("link", size="md")
+                ui.label("Acortador de URLs").classes("text-xl font-bold")
+            
+            with ui.row().classes("items-center gap-3"):
+                ui.button("Documentación API", on_click=lambda: ui.navigate.to("/docs")).props("flat color=white icon=api")
+                if user_id:
+                    async def logout():
+                        app.storage.user.clear()
+                        ui.navigate.to("/login")
+                    ui.button("Cerrar Sesión", on_click=logout).props("color=red icon=logout")
+                else:
+                    ui.button("Login", on_click=lambda: ui.navigate.to("/login")).props("flat color=white icon=login")
+                    ui.button("Registro", on_click=lambda: ui.navigate.to("/register")).props("outline color=white icon=person_add")
 
-        # Layout Principal
-        ui.query('body').classes('bg-slate-900 text-white')
-
-        # Header
-        with ui.header().classes('justify-between bg-slate-800 p-4 border-b border-slate-700'):
-            ui.label('✂️ URLShortener Pro').classes('text-2xl font-bold text-indigo-400')
-
-            with ui.row().classes('items-center gap-3'):
-                auth_info = ui.label('').classes('text-slate-300 text-sm')
-
-                def update_auth_header():
-                    if session.get('authenticated'):
-                        auth_info.set_text(f"👤 {session.get('email')}")
-                        login_btn.set_visibility(False)
-                        reg_btn.set_visibility(False)
-                        logout_btn.set_visibility(True)
-                    else:
-                        auth_info.set_text('')
-                        login_btn.set_visibility(True)
-                        reg_btn.set_visibility(True)
-                        logout_btn.set_visibility(False)
-
-                login_btn = ui.button('Iniciar Sesión', on_click=lambda: login_dialog.open()).classes('bg-slate-700')
-                reg_btn = ui.button('Registrarse', on_click=lambda: register_dialog.open()).classes('bg-indigo-600')
-
-                def do_logout():
-                    session['authenticated'] = False
-                    session['user_id'] = None
-                    session['email'] = ""
-                    update_auth_header()
-                    ui.notify('Sesión cerrada correctamente', type='info')
-
-                logout_btn = ui.button('Salir', on_click=do_logout).classes('bg-red-600/80')
-
-        # Modal de Login
-        with ui.dialog() as login_dialog, ui.card().classes('bg-slate-800 text-white w-96 p-6 space-y-4'):
-            ui.label('Iniciar Sesión').classes('text-xl font-bold')
-            login_email = ui.input('Correo Electrónico').classes('w-full').props('dark')
-            login_pass = ui.input('Contraseña', password=True).classes('w-full').props('dark')
-
-            async def process_login():
-                async with AsyncSessionLocal() as db:
-                    stmt = select(User).where(User.email == login_email.value)
-                    res = await db.execute(stmt)
-                    user = res.scalar_one_or_none()
-
-                    if user and verify_password(login_pass.value, user.hashed_password):
-                        session['authenticated'] = True
-                        session['user_id'] = user.id
-                        session['email'] = user.email
-                        update_auth_header()
-                        login_dialog.close()
-                        ui.notify(f'¡Bienvenido {user.email}!', type='positive')
-                    else:
-                        ui.notify('Credenciales inválidas', type='negative')
-
-            ui.button('Entrar', on_click=process_login).classes('w-full bg-indigo-600')
-
-        # Modal de Registro
-        with ui.dialog() as register_dialog, ui.card().classes('bg-slate-800 text-white w-96 p-6 space-y-4'):
-            ui.label('Registro de Usuario').classes('text-xl font-bold')
-            reg_email = ui.input('Correo Electrónico').classes('w-full').props('dark')
-            reg_pass = ui.input('Contraseña', password=True).classes('w-full').props('dark')
-
-            async def process_register():
-                if not reg_email.value or not reg_pass.value:
-                    ui.notify('Completa todos los campos', type='warning')
-                    return
-
-                async with AsyncSessionLocal() as db:
-                    stmt = select(User).where(User.email == reg_email.value)
-                    res = await db.execute(stmt)
-                    if res.scalar_one_or_none():
-                        ui.notify('El correo ya está registrado', type='warning')
+        # Contenido Principal
+        with ui.column().classes("items-center w-full max-w-4xl mx-auto mt-10 p-4"):
+            ui.label("Acorta tus Enlaces en Segundos").classes("text-3xl font-extrabold text-gray-800 mb-2 text-center")
+            ui.label("Genera enlaces cortos y gestiona tu historial de manera sencilla.").classes("text-gray-500 mb-8 text-center")
+            
+            with ui.card().classes("w-full p-6 shadow-md rounded-lg border"):
+                url_input = ui.input("Ingresa tu URL de origen", placeholder="https://ejemplo.com/pagina-muy-larga").classes("w-full text-lg")
+                
+                result_container = ui.column().classes("w-full mt-4 items-center hidden")
+                short_url_label = ui.label("").classes("text-lg font-bold text-blue-600")
+                
+                async def shorten_url():
+                    val = (url_input.value or "").strip()
+                    if not val.startswith(("http://", "https://")):
+                        ui.notify("La URL debe comenzar con http:// o https://", color="warning")
                         return
+                    
+                    import string, random
+                    chars = string.ascii_letters + string.digits
+                    code = "".join(random.choice(chars) for _ in range(6))
+                    
+                    async with AsyncSessionLocal() as db:
+                        new_item = URL(target_url=val, short_code=code, user_id=user_id)
+                        db.add(new_item)
+                        await db.commit()
+                    
+                    full_short_url = f"http://127.0.0.1:8000/r/{code}"
+                    short_url_label.set_text(full_short_url)
+                    result_container.classes(remove="hidden")
+                    ui.notify("¡URL acortada con éxito!", color="positive")
+                    url_input.value = ""
 
-                    new_user = User(email=reg_email.value, hashed_password=get_password_hash(reg_pass.value))
+                ui.button("Acortar URL", on_click=shorten_url).classes("w-full mt-4 bg-blue-600 text-white font-bold py-3 text-lg")
+                
+                with result_container:
+                    ui.label("Tu URL Acortada:").classes("text-sm text-gray-500 font-semibold")
+                    with ui.row().classes("items-center gap-2 bg-gray-100 p-3 rounded w-full justify-between mt-1"):
+                        short_url_label
+                        def copy_to_clipboard():
+                            ui.run_javascript(f'navigator.clipboard.writeText("{short_url_label.text}")')
+                            ui.notify("Copiado al portapapeles", color="positive")
+                        ui.button("Copiar", on_click=copy_to_clipboard).props("icon=content_copy color=blue")
+
+            # Sección de Historial de URLs del Usuario
+            if user_id:
+                ui.label("Tus Enlaces Guardados").classes("text-2xl font-bold mt-12 mb-4 text-gray-800 w-full text-left")
+                async with AsyncSessionLocal() as db:
+                    stmt = select(URL).where(URL.user_id == user_id).order_by(URL.id.desc())
+                    res = await db.execute(stmt)
+                    user_urls = res.scalars().all()
+                    
+                    if user_urls:
+                        columns = [
+                            {"name": "code", "label": "Código Corto", "field": "short_code", "align": "left"},
+                            {"name": "target", "label": "URL Destino Original", "field": "target_url", "align": "left"},
+                        ]
+                        rows = [{"short_code": f"http://127.0.0.1:8000/r/{item.short_code}", "target_url": item.target_url} for item in user_urls]
+                        ui.table(columns=columns, rows=rows, row_key="short_code").classes("w-full shadow-md")
+                    else:
+                        ui.label("Aún no has creado ningún enlace guardado.").classes("text-gray-400 italic text-center w-full my-4")
+            else:
+                with ui.card().classes("w-full mt-8 p-4 bg-blue-50 border-blue-200 border text-center"):
+                    ui.label("💡 Consejo: Regístrate e inicia sesión para guardar el historial de tus URLs acortadas.").classes("text-blue-700 text-sm")
+
+    @ui.page("/register")
+    async def register_page():
+        ui.colors(primary="#2563eb")
+        with ui.card().classes("w-96 absolute-center p-6 shadow-lg"):
+            ui.label("Crear Cuenta").classes("text-2xl font-bold mb-4 text-center w-full text-blue-600")
+            
+            email_input = ui.input("Correo Electrónico").classes("w-full mb-2")
+            pass_input = ui.input("Contraseña", password=True, password_toggle_button=True).classes("w-full mb-4")
+            
+            async def handle_register():
+                if not email_input.value or "@" not in email_input.value:
+                    ui.notify("Ingresa un correo electrónico válido", color="warning")
+                    return
+                if len(pass_input.value or "") < 8:
+                    ui.notify("La contraseña debe tener al menos 8 caracteres", color="negative")
+                    return
+                
+                async with AsyncSessionLocal() as db:
+                    stmt = select(User).where(User.email == email_input.value)
+                    result = await db.execute(stmt)
+                    if result.scalar_one_or_none():
+                        ui.notify("El correo ya está registrado", color="warning")
+                        return
+                    
+                    new_user = User(email=email_input.value, hashed_password=hash_password(pass_input.value))
                     db.add(new_user)
                     await db.commit()
-                    ui.notify('Registro exitoso. Ya puedes iniciar sesión.', type='positive')
-                    register_dialog.close()
-                    login_dialog.open()
+                    ui.notify("¡Registro exitoso! Redirigiendo al login...", color="positive")
+                    ui.navigate.to("/login")
 
-            ui.button('Crear Cuenta', on_click=process_register).classes('w-full bg-indigo-600')
+            ui.button("Registrarse", on_click=handle_register).classes("w-full bg-blue-600 text-white font-bold py-2 mb-2")
+            ui.link("¿Ya tienes cuenta? Inicia sesión", "/login").classes("text-sm text-center w-full block text-blue-500")
 
-        # Área Principal (Formulario Acortador)
-        with ui.column().classes('w-full max-w-2xl mx-auto my-12 items-center gap-6 p-4'):
-            ui.label('Acorta tus enlaces en segundos').classes('text-4xl font-extrabold text-center')
-            ui.label('Interfaz construida 100% en Python Puro').classes('text-slate-400 text-center')
-
-            with ui.row().classes('w-full gap-2 items-center'):
-                url_input = ui.input(placeholder='https://tu-enlace-largo.com/ruta').classes('flex-1').props('dark outline')
-
-                async def process_shorten():
-                    if not url_input.value or not url_input.value.startswith(('http://', 'https://')):
-                        ui.notify('Ingresa una URL válida con http:// o https://', type='warning')
+    @ui.page("/login")
+    async def login_page():
+        ui.colors(primary="#2563eb")
+        with ui.card().classes("w-96 absolute-center p-6 shadow-lg"):
+            ui.label("Iniciar Sesión").classes("text-2xl font-bold mb-4 text-center w-full text-blue-600")
+            
+            email_input = ui.input("Email").classes("w-full mb-2")
+            pass_input = ui.input("Contraseña", password=True, password_toggle_button=True).classes("w-full mb-4")
+            
+            async def handle_login():
+                async with AsyncSessionLocal() as db:
+                    stmt = select(User).where(User.email == email_input.value)
+                    result = await db.execute(stmt)
+                    user = result.scalar_one_or_none()
+                    
+                    if not user or not verify_password(pass_input.value, user.hashed_password):
+                        ui.notify("Credenciales inválidas", color="negative")
                         return
+                    
+                    token = create_access_token({"sub": user.id, "email": user.email})
+                    app.storage.user["access_token"] = token
+                    ui.notify("¡Bienvenido!", color="positive")
+                    ui.navigate.to("/")
 
-                    async with AsyncSessionLocal() as db:
-                        code = generate_short_code()
-                        user_id = session.get('user_id') if session.get('authenticated') else None
-                        new_url = URL(original_url=url_input.value, short_code=code, user_id=user_id)
-                        db.add(new_url)
-                        await db.commit()
-
-                        short_link = f"http://localhost:8000/{code}"
-                        result_card.set_visibility(True)
-                        result_link.set_text(short_link)
-                        result_link.props(f'href="{short_link}" target="_blank"')
-                        ui.notify('¡URL acortada generada!', type='positive')
-
-                ui.button('Acortar', on_click=process_shorten).classes('bg-indigo-600 h-14 px-6')
-
-            # Tarjeta de Resultado
-            with ui.card().classes('w-full bg-slate-800/80 border border-indigo-500/30 p-4 text-center hidden') as result_card:
-                ui.label('¡Enlace listo para compartir!').classes('text-sm text-slate-400')
-                result_link = ui.link('', '').classes('text-xl text-indigo-400 font-mono underline')
-
-        update_auth_header()
+            ui.button("Entrar", on_click=handle_login).classes("w-full bg-blue-600 text-white font-bold py-2 mb-2")
+            ui.link("¿No tienes cuenta? Regístrate aquí", "/register").classes("text-sm text-center w-full block text-blue-500")
